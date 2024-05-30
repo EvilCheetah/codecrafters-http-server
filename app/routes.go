@@ -87,35 +87,10 @@ func handle_get_file(connection net.Conn, request *http.Request) {
 }
 
 func handle_post_file(connection net.Conn, request *http.Request) {
-	err := request.ParseMultipartForm(FILE_SIZE_LIMIT)
-	if err != nil {
-		response := http.Response{
-			ProtoMajor: 1,
-			ProtoMinor: 1,
-			StatusCode: http.StatusBadRequest,
-			Body: io.NopCloser(bytes.NewBufferString(
-				fmt.Sprintf(
-					"File is Too Large. Current limit: %d Bytes",
-					FILE_SIZE_LIMIT,
-				),
-			)),
-		}
+	filename := strings.TrimPrefix(request.URL.Path, FILE_PATH)
 
-		response.Write(connection)
-		return
-	}
-
-	file, handler, err := request.FormFile("file")
-	if err != nil {
-		fmt.Println("Unable to RETRIEVE file from form")
-
-		handle_internal_server_error(connection, request)
-		return
-	}
-	defer file.Close()
-
-	destination, err := os.Create(
-		filepath.Clean(filepath.Join(*WEB_ROOT_PATH, handler.Filename)),
+	file, err := os.Create(
+		filepath.Clean(filepath.Join(*WEB_ROOT_PATH, filename)),
 	)
 	if err != nil {
 		fmt.Println("Unable to CREATE a file")
@@ -124,7 +99,7 @@ func handle_post_file(connection net.Conn, request *http.Request) {
 		return
 	}
 
-	_, err = io.Copy(destination, file)
+	_, err = io.Copy(file, request.Body)
 	if err != nil {
 		fmt.Println("Unable to SAVE a file")
 
