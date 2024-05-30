@@ -28,9 +28,10 @@ func handle_echo(connection net.Conn, request *http.Request) {
 	var content_length int64
 
 	echo_text := strings.TrimPrefix(request.URL.Path, ECHO_PATH)
+	encoding := request.Header.Get("Accept-Encoding")
 
-	switch encoding := request.Header.Get("Accept-Encoding"); {
-	case encoding == "gzip":
+	switch {
+	case strings.Contains(encoding, "gzip"):
 		var buffer bytes.Buffer
 		gzip_w := gzip.NewWriter(&buffer)
 		_, err := gzip_w.Write([]byte(echo_text))
@@ -61,7 +62,7 @@ func handle_echo(connection net.Conn, request *http.Request) {
 
 	response.Header.Set("Content-Type", "text/plain")
 
-	if request.Header.Get("Accept-Encoding") == "gzip" {
+	if strings.Contains(encoding, "gzip") {
 		response.Header.Set("Content-Encoding", "gzip")
 	}
 
