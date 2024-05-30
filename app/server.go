@@ -25,6 +25,9 @@ func HandleRequest(connection net.Conn) {
 	case strings.HasPrefix(request.URL.Path, "/echo/"):
 		handle_echo(connection, request)
 
+	case strings.HasPrefix(request.URL.Path, "/user-agent"):
+		handle_user_agent(connection, request)
+
 	default:
 		handle_not_found(connection, request)
 	}
