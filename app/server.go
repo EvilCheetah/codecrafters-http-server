@@ -2,11 +2,20 @@ package main
 
 import (
 	"bufio"
+	"flag"
 	"fmt"
 	"net"
 	"net/http"
 	"os"
 	"strings"
+)
+
+var WEB_ROOT_PATH *string
+
+const (
+	ECHO_PATH       = "/echo/"
+	GET_FILE_PATH   = "/files/"
+	USER_AGENT_PATH = "/user-agent"
 )
 
 func HandleRequest(connection net.Conn) {
@@ -22,10 +31,13 @@ func HandleRequest(connection net.Conn) {
 	case path == "/":
 		handle_root(connection, request)
 
-	case strings.HasPrefix(request.URL.Path, "/echo/"):
+	case strings.HasPrefix(request.URL.Path, ECHO_PATH):
 		handle_echo(connection, request)
 
-	case strings.HasPrefix(request.URL.Path, "/user-agent"):
+	case strings.HasPrefix(request.URL.Path, GET_FILE_PATH):
+		handle_get_file(connection, request)
+
+	case strings.HasPrefix(request.URL.Path, USER_AGENT_PATH):
 		handle_user_agent(connection, request)
 
 	default:
@@ -34,6 +46,13 @@ func HandleRequest(connection net.Conn) {
 }
 
 func main() {
+	WEB_ROOT_PATH = flag.String(
+		"directory",
+		"",
+		"WebRoot Directory for `GET /files/<filename>`",
+	)
+	flag.Parse()
+
 	listen, err := net.Listen("tcp", "0.0.0.0:4221")
 	if err != nil {
 		fmt.Println("Failed to bind to port 4221")
