@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"compress/gzip"
 	"errors"
 	"fmt"
 	"io"
@@ -23,18 +24,46 @@ func handle_root(connection net.Conn, request *http.Request) {
 }
 
 func handle_echo(connection net.Conn, request *http.Request) {
+	var body io.ReadCloser
+	var content_length int64
+
 	echo_text := strings.TrimPrefix(request.URL.Path, ECHO_PATH)
+
+	switch encoding := request.Header.Get("Accept-Encoding"); {
+	case encoding == "gzip":
+		var buffer bytes.Buffer
+		gzip_w := gzip.NewWriter(&buffer)
+		_, err := gzip_w.Write([]byte(echo_text))
+		if err != nil {
+			fmt.Println(err.Error())
+
+			handle_internal_server_error(connection, request)
+			return
+		}
+		gzip_w.Close()
+
+		body = io.NopCloser(&buffer)
+		content_length = int64(buffer.Len())
+
+	default:
+		body = io.NopCloser(bytes.NewBufferString(echo_text))
+		content_length = int64(len(echo_text))
+	}
 
 	response := http.Response{
 		ProtoMajor:    1,
 		ProtoMinor:    1,
 		StatusCode:    http.StatusOK,
-		ContentLength: int64(len(echo_text)),
-		Body:          io.NopCloser(bytes.NewBufferString(echo_text)),
+		ContentLength: content_length,
+		Body:          body,
 		Header:        make(http.Header),
 	}
 
 	response.Header.Set("Content-Type", "text/plain")
+
+	if request.Header.Get("Accept-Encoding") == "gzip" {
+		response.Header.Set("Content-Encoding", "gzip")
+	}
 
 	response.Write(connection)
 }
