@@ -40,11 +40,13 @@ func main() {
 		os.Exit(1)
 	}
 
-	connection, err := listen.Accept()
-	if err != nil {
-		fmt.Println("Error accepting connection: ", err.Error())
-		os.Exit(1)
-	}
+	for {
+		connection, err := listen.Accept()
+		if err != nil {
+			fmt.Println("Error accepting connection: ", err.Error())
+			os.Exit(1)
+		}
 
-	HandleRequest(connection)
+		go HandleRequest(connection)
+	}
 }
