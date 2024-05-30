@@ -6,11 +6,7 @@ import (
 	"net"
 	"net/http"
 	"os"
-)
-
-const (
-	HTTP_STATUS_200_OK        = "HTTP/1.1 200 OK\r\n\r\n"
-	HTTP_STATUS_404_NOT_FOUND = "HTTP/1.1 404 Not Found\r\n\r\n"
+	"strings"
 )
 
 func HandleRequest(connection net.Conn) {
@@ -22,12 +18,16 @@ func HandleRequest(connection net.Conn) {
 		return
 	}
 
-	if request.URL.Path == "/" {
-		connection.Write([]byte(HTTP_STATUS_200_OK))
-		return
-	}
+	switch path := request.URL.Path; {
+	case path == "/":
+		handle_root(connection, request)
 
-	connection.Write([]byte(HTTP_STATUS_404_NOT_FOUND))
+	case strings.HasPrefix(request.URL.Path, "/echo/"):
+		handle_echo(connection, request)
+
+	default:
+		handle_not_found(connection, request)
+	}
 }
 
 func main() {
